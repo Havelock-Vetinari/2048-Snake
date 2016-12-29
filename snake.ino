@@ -1,5 +1,12 @@
 #include <Adafruit_GFX.h>   // Graphics Library
 #include <RGBmatrixPanel.h> // Hardware Library
+
+/**
+ * 2048 Snake
+ * by Julian Szulc 2016
+ * @julian.szulc
+ * https://github.com/Havelock-Vetinari
+ */
  
 #define ACTIVATED LOW
  
@@ -167,6 +174,7 @@ void put_food(){
 }
 
 void draw_logo() {
+  #define LOGO_WIDTH 60
   const bool code[] = {
     true,true,false,false,true,true,false,true,false,false,true,true,true,false,false,true,
     false,false,true,false,true,true,false,false,true,true,false,true,false,false,true,false,
@@ -192,7 +200,7 @@ void draw_logo() {
     creoqode.drawPixel(30+2, j, creoqode.Color333(2, 2, 2));
   }
   for(int i = 0; i < 123; i++){
-    creoqode.drawPixel(((code_and_text[i]-1)%60)+2, ((code_and_text[i]-1)/60)+23, creoqode.Color333(2, 2, 2));
+    creoqode.drawPixel(((code_and_text[i]-1)%LOGO_WIDTH)+2, ((code_and_text[i]-1)/LOGO_WIDTH)+23, creoqode.Color333(2, 2, 2));
   }
 }
 
