@@ -51,6 +51,7 @@ const unsigned int color_food = creoqode.Color333(0, 3, 0);
 const unsigned int color_snake = creoqode.Color333(1, 2, 0);
 const unsigned int color_score_title = creoqode.Color333(0, 1, 0);
 const unsigned int color_score_points = creoqode.Color333(0, 3, 0);
+const unsigned int color_level_mark = creoqode.Color333(2, 0, 0);
 
 unsigned int snake[62*30];
 unsigned int snake_len = 2;
@@ -100,13 +101,13 @@ void loop() {
   draw_snake();
   while(true){
     curtime = millis();
-    if(digitalRead(button_left)==ACTIVATED){
+    if(KEY_PRESSED(button_left)){
       if(snake_direction != DIR_RIGHT) snake_next_dir = DIR_LEFT;
-    } else if(digitalRead(button_right)==ACTIVATED){
+    } else if(KEY_PRESSED(button_right)){
       if(snake_direction != DIR_LEFT) snake_next_dir = DIR_RIGHT;
-    } else if(digitalRead(button_up)==ACTIVATED){
+    } else if(KEY_PRESSED(button_up)){
       if(snake_direction != DIR_DOWN) snake_next_dir = DIR_UP;
-    } else if(digitalRead(button_down)==ACTIVATED){
+    } else if(KEY_PRESSED(button_down)){
       if(snake_direction != DIR_UP) snake_next_dir = DIR_DOWN;
     }
     if(curtime > next_move) {
@@ -134,6 +135,7 @@ void loop() {
         if((catches%LEVEL_UP_EVERY)==0 && game_speed > MAX_GAME_SPEED) {
           points_factor++;
           game_speed-=SPEEDUP;
+          creoqode.drawPixel(catches/10-1, 0, color_level_mark);
         }
         put_food();
       }
@@ -155,6 +157,7 @@ void reset_snake() {
   snake_old_tail = 1023+31;
   snake[0] = 1025+31;
   snake[1] = 1024+31;
+  creoqode.drawRect(0, 0, 64, 32, color_border);
   creoqode.fillRect(1, 1, 62, 30, 0);
 
 }
