@@ -9,6 +9,7 @@
  */
  
 #define ACTIVATED LOW
+
  
 #define CLK 11
 #define LAT 10
@@ -23,6 +24,8 @@ RGBmatrixPanel creoqode(A, B, C, D, CLK, LAT, OE, false, 64);
 #define GET_X(p) p%64
 #define GET_Y(p) p/64
 
+#define KEY_PRESSED(key) digitalRead(key)==ACTIVATED
+
 #define GAME_SPEED 500
 
 #define DIR_UP -64
@@ -34,8 +37,17 @@ const int button_left = 34;
 const int button_up = 35;
 const int button_right = 36;
 const int button_down = 37;
-const int button5 = 38;
-const int button6 = 39;
+const int button_5 = 38;
+const int button_6 = 39;
+
+const unsigned int color_logo = creoqode.Color333(1, 2, 1);
+const unsigned int color_border = creoqode.Color333(0, 1, 1);
+const unsigned int color_title = creoqode.Color333(5, 0, 0);
+const unsigned int color_gameover = creoqode.Color333(3, 0, 0);
+const unsigned int color_food = creoqode.Color333(0, 3, 0);
+const unsigned int color_snake = creoqode.Color333(1, 2, 0);
+const unsigned int color_score_title = creoqode.Color333(0, 1, 0);
+const unsigned int color_score_points = creoqode.Color333(0, 3, 0);
 
 unsigned int snake[62*30];
 unsigned int snake_len = 2;
@@ -44,6 +56,8 @@ int snake_next_dir = 1;
 unsigned int snake_old_tail = 0;
 unsigned int food;
 unsigned long curtime;
+
+unsigned long points = 0;
 
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
@@ -55,19 +69,19 @@ void setup() {
   delay(1500);
   creoqode.setTextSize(2);
   creoqode.setCursor(3, 5);
-  creoqode.setTextColor(creoqode.Color333(5, 0, 0));
+  creoqode.setTextColor(color_title);
   creoqode.fillRect(2, 4, 60, 16, 0);
   creoqode.print("Snake");
   delay(3000);
   
-  creoqode.drawRect(0, 0, 64, 32, creoqode.Color333(0, 1, 1));
+  creoqode.drawRect(0, 0, 64, 32, color_border);
   delay(1250);
   pinMode(button_left, INPUT_PULLUP);
   pinMode(button_up, INPUT_PULLUP);
   pinMode(button_right, INPUT_PULLUP);
   pinMode(button_down, INPUT_PULLUP);
-  pinMode(button5, INPUT_PULLUP);
-  pinMode(button6, INPUT_PULLUP);
+  pinMode(button_5, INPUT_PULLUP);
+  pinMode(button_6, INPUT_PULLUP);
 }
  
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
@@ -94,11 +108,22 @@ void loop() {
       if(detect_colision()) {
         game_over();
         delay(2000);
+        creoqode.fillRect(1, 1, 60, 30, 0);
+        print_points();
+        while(true){
+          if(KEY_PRESSED(button_up) || KEY_PRESSED(button_down) ||
+             KEY_PRESSED(button_left) || KEY_PRESSED(button_right) ||
+             KEY_PRESSED(button_5) || KEY_PRESSED(button_6)){
+            break;
+          }
+          delay(10);
+        }
         break;
       }
       if(snake[0] == food){
         snake[snake_len]=snake[snake_len-1];
         snake_len++;
+        points++;
         put_food();
       }
       draw_snake();
@@ -109,6 +134,7 @@ void loop() {
 
 void reset_snake() {
   snake_len = 2;
+  points = 0;
   snake_direction = DIR_RIGHT;
   snake_next_dir = snake_direction;
   memset(snake, 0,sizeof(snake));
@@ -122,7 +148,7 @@ void reset_snake() {
 void draw_snake() {
   creoqode.drawPixel(snake_old_tail%64, snake_old_tail/64, 0);
   for(int i = 0; i < snake_len; i++){
-    creoqode.drawPixel(GET_X(snake[i]), GET_Y(snake[i]), creoqode.Color333(1, 2, 0));
+    creoqode.drawPixel(GET_X(snake[i]), GET_Y(snake[i]), color_snake);
   } 
 }
 
@@ -154,9 +180,25 @@ bool detect_colision() {
 void game_over(){
   creoqode.setTextSize(2);
   creoqode.setCursor(8, 1);
-  creoqode.setTextColor(creoqode.Color333(3, 0, 0));
+  creoqode.setTextColor(color_gameover);
   creoqode.print("GAME OVER");
-  
+}
+
+void print_points(){
+  creoqode.setTextSize(1);
+  creoqode.setCursor(2, 2);
+  creoqode.setTextColor(color_score_title);
+  creoqode.print("You've got");
+  String points_string = String(points);
+  uint16_t text_width = 0;
+  creoqode.getTextBounds((char*)points_string.c_str(), 0, 0, NULL, NULL, &text_width, NULL);
+  creoqode.setCursor(32-(text_width/2), 13);
+  creoqode.setTextColor(color_score_points);
+  creoqode.print(String(points_string));
+  creoqode.setTextColor(color_score_title);
+  creoqode.setCursor(points==1?18:14, 23);
+  creoqode.print(points==1?"point":"points");
+
 }
 
 void put_food(){
@@ -170,7 +212,7 @@ void put_food(){
     break;
   }
   food = new_food;
-  creoqode.drawPixel(GET_X(food), GET_Y(food), creoqode.Color333(0, 3, 0));
+  creoqode.drawPixel(GET_X(food), GET_Y(food), color_food);
 }
 
 void draw_logo() {
@@ -192,15 +234,15 @@ void draw_logo() {
   for(int i = 0; i < sizeof(code); i++){
     if(code[i]==true) {
       for(int j=1; j < 20; j++){
-        creoqode.drawPixel(i+2, j, creoqode.Color333(2, 2, 2));
+        creoqode.drawPixel(i+2, j, color_logo);
       }
     }
   }
   for(int j=20; j < 23; j++){
-    creoqode.drawPixel(30+2, j, creoqode.Color333(2, 2, 2));
+    creoqode.drawPixel(30+2, j, color_logo);
   }
   for(int i = 0; i < 123; i++){
-    creoqode.drawPixel(((code_and_text[i]-1)%LOGO_WIDTH)+2, ((code_and_text[i]-1)/LOGO_WIDTH)+23, creoqode.Color333(2, 2, 2));
+    creoqode.drawPixel(((code_and_text[i]-1)%LOGO_WIDTH)+2, ((code_and_text[i]-1)/LOGO_WIDTH)+23, color_logo);
   }
 }
 
