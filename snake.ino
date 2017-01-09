@@ -18,20 +18,23 @@
 #define B   13
 #define C   14
 #define D   15
- 
-RGBmatrixPanel creoqode(A, B, C, D, CLK, LAT, OE, false, 64);
 
 #define GET_X(p) p%64
 #define GET_Y(p) p/64
 
 #define KEY_PRESSED(key) digitalRead(key)==ACTIVATED
 
-#define GAME_SPEED 500
+#define INITIAL_GAME_SPEED 340
+#define MAX_GAME_SPEED 70
+#define LEVEL_UP_EVERY 10
+#define SPEEDUP 20
 
 #define DIR_UP -64
 #define DIR_RIGHT 1
 #define DIR_DOWN 64
 #define DIR_LEFT -1
+
+RGBmatrixPanel creoqode(A, B, C, D, CLK, LAT, OE, false, 64);
  
 const int button_left = 34;
 const int button_up = 35;
@@ -56,8 +59,11 @@ int snake_next_dir = 1;
 unsigned int snake_old_tail = 0;
 unsigned int food;
 unsigned long curtime;
+unsigned long game_speed = INITIAL_GAME_SPEED;
 
 unsigned long points = 0;
+unsigned int points_factor = 1;
+unsigned int catches = 0;
 
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
@@ -123,18 +129,26 @@ void loop() {
       if(snake[0] == food){
         snake[snake_len]=snake[snake_len-1];
         snake_len++;
-        points++;
+        catches++;
+        points+=points_factor;
+        if((catches%LEVEL_UP_EVERY)==0 && game_speed > MAX_GAME_SPEED) {
+          points_factor++;
+          game_speed-=SPEEDUP;
+        }
         put_food();
       }
       draw_snake();
-      next_move = curtime + GAME_SPEED;
+      next_move = curtime + game_speed;
     }
   }
 }
 
 void reset_snake() {
+  game_speed = INITIAL_GAME_SPEED;
   snake_len = 2;
   points = 0;
+  points_factor = 1;
+  catches = 0;
   snake_direction = DIR_RIGHT;
   snake_next_dir = snake_direction;
   memset(snake, 0,sizeof(snake));
@@ -205,9 +219,14 @@ void put_food(){
   unsigned int new_food;
   while(true){
     new_food = random(65, (2048-64));
+    bool colision = false;
     for(int i = 0; i < snake_len; i++){
-      if(new_food == snake[i]) continue;
+      if(new_food == snake[i]) {
+        colision = true;
+        continue;
+      }
     }
+    if(colision == true) continue;
     if(GET_X(new_food) == 0 || GET_X(new_food) == 63) continue;
     break;
   }
