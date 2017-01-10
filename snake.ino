@@ -24,7 +24,7 @@
 
 #define KEY_PRESSED(key) digitalRead(key)==ACTIVATED
 
-#define INITIAL_GAME_SPEED 340
+#define INITIAL_GAME_SPEED 320
 #define MAX_GAME_SPEED 70
 #define LEVEL_UP_EVERY 10
 #define SPEEDUP 20
