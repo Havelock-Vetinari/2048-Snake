@@ -100,6 +100,7 @@ void loop() {
   put_food(GET_POS(31, 15), GET_POS(33, 30));
   unsigned long next_move = 0;
   draw_snake();
+  bool paused = false;
   while(true){
     curtime = millis();
     if(KEY_PRESSED(button_left)){
@@ -110,6 +111,13 @@ void loop() {
       if(snake_direction != DIR_DOWN) snake_next_dir = DIR_UP;
     } else if(KEY_PRESSED(button_down)){
       if(snake_direction != DIR_UP) snake_next_dir = DIR_DOWN;
+    } else if(KEY_PRESSED(button_6)){
+      paused = !paused;
+      delay(1000);
+    }
+    if(paused) {
+      delay(100);
+      next_move = curtime + game_speed;
     }
     if(curtime > next_move) {
       move_snake();
