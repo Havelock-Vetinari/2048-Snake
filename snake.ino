@@ -21,6 +21,7 @@
 
 #define GET_X(p) p%64
 #define GET_Y(p) p/64
+#define GET_POS(x,y) (64*y+x)
 
 #define KEY_PRESSED(key) digitalRead(key)==ACTIVATED
 
@@ -96,7 +97,7 @@ void setup() {
 void loop() {
   randomSeed(analogRead(5)*millis());
   reset_snake();
-  put_food();
+  put_food(GET_POS(31, 15), GET_POS(33, 30));
   unsigned long next_move = 0;
   draw_snake();
   while(true){
@@ -137,7 +138,7 @@ void loop() {
           game_speed-=SPEEDUP;
           creoqode.drawPixel(catches/10-1, 0, color_level_mark);
         }
-        put_food();
+        put_food(GET_POS(1,1), GET_POS(62,14));
       }
       draw_snake();
       next_move = curtime + game_speed;
@@ -154,16 +155,16 @@ void reset_snake() {
   snake_direction = DIR_RIGHT;
   snake_next_dir = snake_direction;
   memset(snake, 0,sizeof(snake));
-  snake_old_tail = 1023+31;
-  snake[0] = 1025+31;
-  snake[1] = 1024+31;
+  snake_old_tail = 0;
+  snake[0] = GET_POS(31,15);
+  snake[1] = GET_POS(32,15);
   creoqode.drawRect(0, 0, 64, 32, color_border);
   creoqode.fillRect(1, 1, 62, 30, 0);
 
 }
 
 void draw_snake() {
-  creoqode.drawPixel(snake_old_tail%64, snake_old_tail/64, 0);
+  if(snake_old_tail!=0) creoqode.drawPixel(GET_X(snake_old_tail), GET_Y(snake_old_tail), 0);
   for(int i = 0; i < snake_len; i++){
     creoqode.drawPixel(GET_X(snake[i]), GET_Y(snake[i]), color_snake);
   } 
@@ -218,10 +219,10 @@ void print_points(){
 
 }
 
-void put_food(){
+void put_food(int first, int last){
   unsigned int new_food;
   while(true){
-    new_food = random(65, (2048-64));
+    new_food = random(first, last+1);
     bool colision = false;
     for(int i = 0; i < snake_len; i++){
       if(new_food == snake[i]) {
@@ -231,6 +232,7 @@ void put_food(){
     }
     if(colision == true) continue;
     if(GET_X(new_food) == 0 || GET_X(new_food) == 63) continue;
+    if(GET_Y(new_food) == 0 || GET_Y(new_food) == 31) continue;
     break;
   }
   food = new_food;
