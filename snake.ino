@@ -10,7 +10,6 @@
  
 #define ACTIVATED LOW
 
- 
 #define CLK 11
 #define LAT 10
 #define OE  9
@@ -80,10 +79,10 @@ void setup() {
   creoqode.setTextColor(color_title);
   creoqode.fillRect(2, 4, 60, 16, 0);
   creoqode.print("Snake");
-  delay(3000);
+  delay(2500);
   
   creoqode.drawRect(0, 0, 64, 32, color_border);
-  delay(1250);
+  delay(1200);
   pinMode(button_left, INPUT_PULLUP);
   pinMode(button_up, INPUT_PULLUP);
   pinMode(button_right, INPUT_PULLUP);
@@ -218,11 +217,11 @@ void print_points(){
   String points_string = String(points);
   uint16_t text_width = 0;
   creoqode.getTextBounds((char*)points_string.c_str(), 0, 0, NULL, NULL, &text_width, NULL);
-  creoqode.setCursor(32-(text_width/2), 13);
+  creoqode.setCursor(32-(text_width/2), 12);
   creoqode.setTextColor(color_score_points);
   creoqode.print(String(points_string));
   creoqode.setTextColor(color_score_title);
-  creoqode.setCursor(points==1?18:14, 23);
+  creoqode.setCursor(points==1?18:14, 22);
   creoqode.print(points==1?"point":"points");
 
 }
