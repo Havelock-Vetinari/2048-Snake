@@ -49,7 +49,9 @@ const unsigned int color_border = creoqode.Color444(0, 1, 1);
 const unsigned int color_title = creoqode.Color444(10, 0, 0);
 const unsigned int color_gameover = creoqode.Color444(6, 0, 0);
 const unsigned int color_food = creoqode.Color444(0, 6, 0);
-const unsigned int color_snake = creoqode.Color444(2, 4, 0);
+const unsigned int color_snake_head = creoqode.Color444(7, 0, 2);
+const unsigned int color_snake_even = creoqode.Color444(0, 1, 5);
+const unsigned int color_snake_odd = creoqode.Color444(1, 0, 5);
 const unsigned int color_score_title = creoqode.Color444(0, 2, 0);
 const unsigned int color_score_points = creoqode.Color444(0, 6, 0);
 const unsigned int color_level_mark = creoqode.Color444(4, 0, 0);
@@ -178,8 +180,9 @@ void reset_snake() {
 
 void draw_snake() {
   if(snake_old_tail!=0) creoqode.drawPixel(GET_X(snake_old_tail), GET_Y(snake_old_tail), 0);
-  for(int i = 0; i < snake_len; i++){
-    creoqode.drawPixel(GET_X(snake[i]), GET_Y(snake[i]), color_snake);
+  creoqode.drawPixel(GET_X(snake[0]), GET_Y(snake[0]), color_snake_head);
+  for(int i = 1; i < snake_len; i++){
+    creoqode.drawPixel(GET_X(snake[i]), GET_Y(snake[i]), (i%2==0 ? color_snake_even : color_snake_odd));
   } 
 }
 
