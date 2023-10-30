@@ -43,15 +43,15 @@ const int button_down = 37;
 const int button_5 = 38;
 const int button_6 = 39;
 
-const unsigned int color_logo = creoqode.Color333(1, 2, 1);
-const unsigned int color_border = creoqode.Color333(0, 1, 1);
-const unsigned int color_title = creoqode.Color333(5, 0, 0);
-const unsigned int color_gameover = creoqode.Color333(3, 0, 0);
-const unsigned int color_food = creoqode.Color333(0, 3, 0);
-const unsigned int color_snake = creoqode.Color333(1, 2, 0);
-const unsigned int color_score_title = creoqode.Color333(0, 1, 0);
-const unsigned int color_score_points = creoqode.Color333(0, 3, 0);
-const unsigned int color_level_mark = creoqode.Color333(2, 0, 0);
+const unsigned int color_logo = creoqode.Color444(1, 2, 1);
+const unsigned int color_border = creoqode.Color444(0, 1, 1);
+const unsigned int color_title = creoqode.Color444(10, 0, 0);
+const unsigned int color_gameover = creoqode.Color444(6, 0, 0);
+const unsigned int color_food = creoqode.Color444(0, 6, 0);
+const unsigned int color_snake = creoqode.Color444(2, 4, 0);
+const unsigned int color_score_title = creoqode.Color444(0, 2, 0);
+const unsigned int color_score_points = creoqode.Color444(0, 6, 0);
+const unsigned int color_level_mark = creoqode.Color444(4, 0, 0);
 
 unsigned int snake[62*30];
 unsigned int snake_len = 2;
@@ -112,7 +112,7 @@ void loop() {
       if(snake_direction != DIR_UP) snake_next_dir = DIR_DOWN;
     } else if(KEY_PRESSED(button_6)){
       paused = !paused;
-      delay(1000);
+      delay(250);
     }
     if(paused) {
       delay(100);
@@ -135,6 +135,7 @@ void loop() {
         }
         break;
       }
+      draw_snake();
       if(snake[0] == food){
         snake[snake_len]=snake[snake_len-1];
         snake_len++;
@@ -147,8 +148,7 @@ void loop() {
         }
         put_food(GET_POS(1,1), GET_POS(62,14));
       }
-      draw_snake();
-      next_move = curtime + game_speed;
+      next_move = millis() + game_speed;
     }
   }
 }
@@ -234,7 +234,7 @@ void put_food(int first, int last){
     for(int i = 0; i < snake_len; i++){
       if(new_food == snake[i]) {
         colision = true;
-        continue;
+        break;
       }
     }
     if(colision == true) continue;
