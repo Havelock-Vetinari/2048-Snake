@@ -28,6 +28,7 @@
 #define MAX_GAME_SPEED 60
 #define LEVEL_UP_EVERY 10
 #define SPEEDUP 20
+#define TURBO_SPEED 30
 
 #define DIR_UP -64
 #define DIR_RIGHT 1
@@ -40,8 +41,8 @@ const int button_left = 34;
 const int button_up = 35;
 const int button_right = 36;
 const int button_down = 37;
-const int button_5 = 38;
-const int button_6 = 39;
+const int button_turbo = 38;
+const int button_pause = 39;
 
 const unsigned int color_logo = creoqode.Color444(1, 2, 1);
 const unsigned int color_border = creoqode.Color444(0, 1, 1);
@@ -87,8 +88,8 @@ void setup() {
   pinMode(button_up, INPUT_PULLUP);
   pinMode(button_right, INPUT_PULLUP);
   pinMode(button_down, INPUT_PULLUP);
-  pinMode(button_5, INPUT_PULLUP);
-  pinMode(button_6, INPUT_PULLUP);
+  pinMode(button_turbo, INPUT_PULLUP);
+  pinMode(button_pause, INPUT_PULLUP);
 }
  
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
@@ -100,6 +101,7 @@ void loop() {
   unsigned long next_move = 0;
   draw_snake();
   bool paused = false;
+  bool turbo = false;
   while(true){
     curtime = millis();
     if(KEY_PRESSED(button_left)){
@@ -110,12 +112,15 @@ void loop() {
       if(snake_direction != DIR_DOWN) snake_next_dir = DIR_UP;
     } else if(KEY_PRESSED(button_down)){
       if(snake_direction != DIR_UP) snake_next_dir = DIR_DOWN;
-    } else if(KEY_PRESSED(button_6)){
+    } else if(KEY_PRESSED(button_pause)){
       paused = !paused;
       delay(250);
+    } else if(KEY_PRESSED(button_turbo)){
+      turbo = true;
     }
     if(paused) {
       delay(100);
+      turbo = false;
       next_move = curtime + game_speed;
     }
     if(curtime > next_move) {
@@ -128,7 +133,7 @@ void loop() {
         while(true){
           if(KEY_PRESSED(button_up) || KEY_PRESSED(button_down) ||
              KEY_PRESSED(button_left) || KEY_PRESSED(button_right) ||
-             KEY_PRESSED(button_5) || KEY_PRESSED(button_6)){
+             KEY_PRESSED(button_turbo) || KEY_PRESSED(button_pause)){
             break;
           }
           delay(10);
@@ -148,7 +153,8 @@ void loop() {
         }
         put_food(GET_POS(1,1), GET_POS(62,14));
       }
-      next_move = millis() + game_speed;
+      next_move = millis() + (turbo ? TURBO_SPEED : game_speed);
+      turbo = false;
     }
   }
 }
