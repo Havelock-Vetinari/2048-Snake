@@ -2,6 +2,7 @@
 #include <RGBmatrixPanel.h> // Hardware Library
 #include "Font3x5FixedNum.h"
 #include "Font5x5Fixed.h"
+#include <Fonts/Picopixel.h>
 
 /**
  * 2048 Snake
@@ -39,6 +40,9 @@
 #define DIR_DOWN 64
 #define DIR_LEFT -1
 
+#define NUM_HI_SCORES 10
+#define NAME_LEN 6
+
 RGBmatrixPanel creoqode(A, B, C, D, CLK, LAT, OE, false, 64);
  
 const int button_left = 34;
@@ -75,8 +79,25 @@ unsigned int catches = 0;
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 String enter_name();
+
+typedef struct {
+  char name[NAME_LEN] = {'\0'};
+  uint16_t points = 0;
+} hiscore_entry;
+
+typedef struct {
+  uint8_t version = 1;
+  hiscore_entry scores[NUM_HI_SCORES];
+} hiscores;
+
+void show_hi_scores(hiscores&);
+
+
+hiscores scores;
+
 void intro();
 void draw_logo();
+
 void reset_snake(unsigned int snake[]);
 void draw_snake(unsigned int snake[]);
 void put_food(int first, int last, unsigned int snake[]);
@@ -85,7 +106,6 @@ void print_points();
 void game_over();
 bool detect_colision(unsigned int snake[]);
 void play_game();
-void show_hi_scores();
  
 void setup() { 
   creoqode.begin();
@@ -107,9 +127,9 @@ void setup() {
 
 void loop() {
   play_game();
-  //show_hi_scores();
   String name = enter_name();
   Serial.println(name);
+  show_hi_scores(scores);
   delay(125);
 }
 
@@ -330,13 +350,13 @@ void draw_logo() {
 String enter_name() {
   unsigned long entry_time = millis();
   const long action_delay = 500;
-  const int x = 2;
-  const int y = 3;
+  const int x = 8;
+  const int y = 6;
   const int buff_width = 1;
   const int char_height = 6;
   const int before_lines = 6;
   const int after_lines = 6;
-  const int max_letters = 6;
+  const int max_letters = NAME_LEN;
   int letter_indexes[max_letters];
   int current_letter = 0;
   bool allow_commit = true;
@@ -348,7 +368,7 @@ String enter_name() {
     ' ', '_', '.', '@', '!', '?', ':'
   };
   memset((int*) letter_indexes, -1, sizeof(letter_indexes));
-  memset((unsigned char*) name, NULL, sizeof(name));
+  memset((unsigned char*) name, '\0', sizeof(name));
   unsigned int canvas_h = char_height*sizeof(letters);
   GFXcanvas1 canvas(8, canvas_h);
   canvas.setFont(&Font5x5Fixed);
@@ -373,6 +393,7 @@ String enter_name() {
   name[0] = letters[selected_index];
   letter_indexes[0] = selected_index;
   if (KEY_PRESSED(button_turbo)) allow_commit = false;
+  creoqode.fillRect(x,y,max_letters*buff_width*8, before_lines+char_height+after_lines, bg_color);
   while(true) {
     while (true) {
       for (unsigned int j = 0; j < sizeof(buff); j++ ) {
@@ -463,7 +484,7 @@ String enter_name() {
           i = selected_index * char_height;
           creoqode.fillRect(x+(current_letter*buff_width*8),y,buff_width*8, before_lines+char_height+after_lines, bg_color);
           letter_indexes[current_letter] = -1;
-          name[current_letter] = NULL;
+          name[current_letter] = '\0';
           current_letter -= 1;
           break;
         }
@@ -476,8 +497,30 @@ String enter_name() {
   return "ERROR";  
 }
 
-void show_hi_scores() {
+void show_hi_scores(hiscores &scores_table) {
+  hiscore_entry entries[NUM_HI_SCORES];
+  unsigned int found_scores = 0;
+
+  for (int i = 0; i < NUM_HI_SCORES; i++) {
+    if (scores_table.scores[i].name[0] != '\0') {
+      entries[found_scores] = scores_table.scores[i];
+      found_scores += 1;
+    }
+  }
   creoqode.fillRect(0, 0, 64, 32, 0);
+  if (found_scores == 0) {
+      creoqode.setFont(&Picopixel);
+      creoqode.setTextColor(creoqode.Color444(1,3,2));
+      creoqode.setTextSize(1);
+      creoqode.setCursor(5, 8);
+      creoqode.println("No High Scores\n\nPlay some games");
+  } else {
+
+  }
+  delay(2200);
+  creoqode.setFont();
+  return;
+
   creoqode.setFont(&Font3x5FixedNum);  // choose font
   creoqode.setTextSize(1);    
   creoqode.setTextColor(creoqode.Color444(0, 2, 0));
