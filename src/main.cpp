@@ -75,6 +75,7 @@ unsigned int catches = 0;
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 String enter_name();
+void intro();
 void draw_logo();
 void reset_snake(unsigned int snake[]);
 void draw_snake(unsigned int snake[]);
@@ -89,7 +90,7 @@ void show_hi_scores();
 void setup() { 
   creoqode.begin();
   
-  //intro();
+  intro();
 
   creoqode.drawRect(0, 0, 64, 32, color_border);
   delay(1200);
@@ -105,7 +106,7 @@ void setup() {
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 void loop() {
-  //play_game();
+  play_game();
   //show_hi_scores();
   String name = enter_name();
   Serial.println(name);
@@ -327,17 +328,20 @@ void draw_logo() {
 }
 
 String enter_name() {
-  int x = 2;
-  int y = 3;
-  int buff_width = 1;
-  int char_height = 6;
-  int before_lines = 6;
-  int after_lines = 6;
-  int max_letters = 6;
-  int current_letter = 0;
+  unsigned long entry_time = millis();
+  const long action_delay = 500;
+  const int x = 2;
+  const int y = 3;
+  const int buff_width = 1;
+  const int char_height = 6;
+  const int before_lines = 6;
+  const int after_lines = 6;
+  const int max_letters = 6;
   int letter_indexes[max_letters];
+  int current_letter = 0;
+  bool allow_commit = true;
   unsigned char name[max_letters+1];
-  unsigned char letters[] = {
+  const char letters[] = {
     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
     'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
     '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
@@ -368,6 +372,7 @@ String enter_name() {
   int letters_dir = 1;
   name[0] = letters[selected_index];
   letter_indexes[0] = selected_index;
+  if (KEY_PRESSED(button_turbo)) allow_commit = false;
   while(true) {
     while (true) {
       for (unsigned int j = 0; j < sizeof(buff); j++ ) {
@@ -411,6 +416,11 @@ String enter_name() {
       delay(20);
     }
     while(true) {
+      if (millis() - entry_time < action_delay) continue;
+      if(!allow_commit && KEY_NOT_PRESSED(button_turbo)) {
+        allow_commit = true;
+        delay(100);
+      }
       if(!left_btn_up && KEY_NOT_PRESSED(button_left)) {
         left_btn_up = true;
         delay(15);
@@ -457,7 +467,7 @@ String enter_name() {
           current_letter -= 1;
           break;
         }
-      } else if (KEY_PRESSED(button_turbo)) {
+      } else if (allow_commit && KEY_PRESSED(button_turbo)) {
         creoqode.fillRect(x,y,(current_letter+1)*buff_width*8, before_lines+char_height+after_lines, bg_color);
         return String((const char*)name);
       }
