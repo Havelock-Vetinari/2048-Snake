@@ -83,17 +83,19 @@ String enter_name();
 typedef struct {
   char name[NAME_LEN] = {'\0'};
   uint16_t points = 0;
-} hiscore_entry;
+} highscore_entry;
 
 typedef struct {
   uint8_t version = 1;
-  hiscore_entry scores[NUM_HI_SCORES];
-} hiscores;
+  highscore_entry scores[NUM_HI_SCORES];
+} highscores;
 
-void show_hi_scores(hiscores&);
+void show_high_scores(highscores&);
 
+void register_high_score(String name, uint16_t points, highscores &highscores_table);
+bool is_high_score_eligable(uint16_t points, highscores &highscores_table);
 
-hiscores scores;
+highscores scores;
 
 void intro();
 void draw_logo();
@@ -129,7 +131,9 @@ void loop() {
   play_game();
   String name = enter_name();
   Serial.println(name);
-  show_hi_scores(scores);
+  // register_high_score("JULIAN", 100, scores);
+  // register_high_score("ANIA", 125, scores);
+  show_high_scores(scores);
   delay(125);
 }
 
@@ -497,8 +501,8 @@ String enter_name() {
   return "ERROR";  
 }
 
-void show_hi_scores(hiscores &scores_table) {
-  hiscore_entry entries[NUM_HI_SCORES];
+void show_high_scores(highscores &scores_table) {
+  highscore_entry entries[NUM_HI_SCORES];
   unsigned int found_scores = 0;
 
   for (int i = 0; i < NUM_HI_SCORES; i++) {
@@ -509,42 +513,78 @@ void show_hi_scores(hiscores &scores_table) {
   }
   creoqode.fillRect(0, 0, 64, 32, 0);
   if (found_scores == 0) {
-      creoqode.setFont(&Picopixel);
-      creoqode.setTextColor(creoqode.Color444(1,3,2));
-      creoqode.setTextSize(1);
-      creoqode.setCursor(5, 8);
-      creoqode.println("No High Scores\n\nPlay some games");
+    creoqode.setFont(&Picopixel);
+    creoqode.setTextColor(creoqode.Color444(1,3,2));
+    creoqode.setTextSize(1);
+    creoqode.setCursor(5, 8);
+    creoqode.println("No High Scores\n\nPlay some games");
   } else {
-
+    unsigned int offset = 0;
+    unsigned int page_index = 0;
+    for (unsigned int i = offset; i < found_scores; i++) {
+      char name_buff[NAME_LEN+1];
+      memset(name_buff, '\0', sizeof(name_buff));
+      memcpy(name_buff, entries[i].name, NAME_LEN);
+      creoqode.setFont(&Font5x5Fixed);
+      creoqode.setTextSize(1);
+      creoqode.setTextColor(creoqode.Color444(0, 2, 0));
+      creoqode.setTextWrap(false);
+      creoqode.setCursor(1,6+page_index*7);
+      creoqode.print((const char*) name_buff);
+      creoqode.setFont(&Font3x5FixedNum);
+      creoqode.setCursor(45,6+page_index*7);
+      creoqode.setTextColor(creoqode.Color444(2, 0, 2));
+      creoqode.print(entries[i].points); 
+      page_index += 1;
+    }
+    creoqode.setFont();
   }
   delay(2200);
   creoqode.setFont();
   return;
+}
 
-  creoqode.setFont(&Font3x5FixedNum);  // choose font
-  creoqode.setTextSize(1);    
-  creoqode.setTextColor(creoqode.Color444(0, 2, 0));
-  creoqode.setTextWrap(false);
-  creoqode.setCursor(1,6);   // as per Adafruit convention custom fonts draw up from line so move cursor
-  creoqode.println("1234567890");
+void register_high_score(String name, uint16_t points, highscores &highscores_table) {
+  Serial.print("Register for " + name + ": ");
+  Serial.println(points);
+  unsigned int lowest_value_index = 0;
+  uint16_t lowest_value = -1;
+  bool found_lower = false;
+  for (unsigned int i; i < NUM_HI_SCORES; i++) {
+    uint16_t current_points = highscores_table.scores[i].points;
+    if (current_points == 0) {
+      memcpy(highscores_table.scores[i].name, name.c_str(), NAME_LEN);
+      highscores_table.scores[i].points = points;
+      return;
+    }
+    Serial.print("i: ");
+    Serial.println(i);
+    Serial.print("Current points: ");
+    Serial.println(current_points);
+    Serial.print("Lowest: ");
+    Serial.println(lowest_value);
+    Serial.print("Points: ");
+    Serial.println(points);
+    if (current_points < points && current_points < lowest_value) {
+      Serial.println("We are in!");
+      found_lower = true;
+      lowest_value = current_points;
+      lowest_value_index = i;
+    }
+  }
+  if (found_lower) {
+    Serial.print("Writing lower for index: ");
+    Serial.println(lowest_value_index);
+    Serial.print("Lowest value: ");
+    Serial.println(lowest_value);
+    memcpy(highscores_table.scores[lowest_value_index].name, name.c_str(), NAME_LEN);
+    highscores_table.scores[lowest_value_index].points = points;
+  }
+}
 
-  creoqode.setFont(&Font5x5Fixed);  // choose font
-  creoqode.setTextSize(1);    
-  creoqode.setTextColor(creoqode.Color444(0, 2, 0));
-  creoqode.setTextWrap(false);
-  creoqode.setCursor(1,12);   // as per Adafruit convention custom fonts draw up from line so move cursor
-  creoqode.println("1234567890");
-  creoqode.setCursor(1,18);
-  creoqode.println("abcdefghijklmnow");
-  creoqode.setCursor(1,24);
-  creoqode.println("ABCDEFGHIJKLMNOPW");
-  creoqode.setCursor(1,30);
-  creoqode.println("WWWMMM");
-  creoqode.setFont(&Font3x5FixedNum);  // choose font
-  creoqode.setCursor(45,31);
-  creoqode.setTextColor(creoqode.Color444(2, 0, 2));
-  creoqode.println("12340");
-
-  creoqode.setFont(); // return to the system font
-  delay(20000);
+bool is_high_score_eligable(uint16_t points, highscores &highscores_table) {
+  for (unsigned int i; i < NUM_HI_SCORES; i++) {
+      if (points > highscores_table.scores[i].points) return true;
+  }
+  return false;
 }
