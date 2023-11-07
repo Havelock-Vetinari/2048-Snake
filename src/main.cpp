@@ -1,6 +1,7 @@
 #include <Adafruit_GFX.h>   // Graphics Library
 #include <RGBmatrixPanel.h> // Hardware Library
 #include "Font3x5FixedNum.h"
+#include "Font2x5FixedMonoNum.h"
 #include "Font5x5Fixed.h"
 #include <Fonts/Picopixel.h>
 
@@ -112,7 +113,7 @@ void play_game();
 void setup() { 
   creoqode.begin();
   
-  intro();
+  //intro();
 
   creoqode.drawRect(0, 0, 64, 32, color_border);
   delay(1200);
@@ -128,11 +129,12 @@ void setup() {
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 void loop() {
-  play_game();
-  String name = enter_name();
-  Serial.println(name);
-  // register_high_score("JULIAN", 100, scores);
-  // register_high_score("ANIA", 125, scores);
+  //play_game();
+  //String name = enter_name();
+  //Serial.println(name);
+  register_high_score("WWWMMM", 43438, scores);
+  register_high_score("JULIAN", 100, scores);
+  register_high_score("ANIA", 125, scores);
   show_high_scores(scores);
   delay(125);
 }
@@ -502,6 +504,8 @@ String enter_name() {
 }
 
 void show_high_scores(highscores &scores_table) {
+  const unsigned int score_line_height = 7;
+
   highscore_entry entries[NUM_HI_SCORES];
   unsigned int found_scores = 0;
 
@@ -522,17 +526,27 @@ void show_high_scores(highscores &scores_table) {
     unsigned int offset = 0;
     unsigned int page_index = 0;
     for (unsigned int i = offset; i < found_scores; i++) {
+      unsigned int base_line = page_index*score_line_height;
       char name_buff[NAME_LEN+1];
       memset(name_buff, '\0', sizeof(name_buff));
       memcpy(name_buff, entries[i].name, NAME_LEN);
-      creoqode.setFont(&Font5x5Fixed);
       creoqode.setTextSize(1);
-      creoqode.setTextColor(creoqode.Color444(0, 2, 0));
       creoqode.setTextWrap(false);
-      creoqode.setCursor(1,6+page_index*7);
+      // place
+      creoqode.setFont(&Font2x5FixedMonoNum);
+      creoqode.setTextColor(creoqode.Color444(2, 2, 0));
+      creoqode.setCursor(0,6+base_line);
+      creoqode.print(i+1);
+
+      // name
+      creoqode.setFont(&Font5x5Fixed);
+      creoqode.setTextColor(creoqode.Color444(0, 2, 0));
+      creoqode.setCursor(7,5+base_line);
       creoqode.print((const char*) name_buff);
+
+      // points
       creoqode.setFont(&Font3x5FixedNum);
-      creoqode.setCursor(45,6+page_index*7);
+      creoqode.setCursor(45,6+base_line);
       creoqode.setTextColor(creoqode.Color444(2, 0, 2));
       creoqode.print(entries[i].points); 
       page_index += 1;
@@ -545,45 +559,25 @@ void show_high_scores(highscores &scores_table) {
 }
 
 void register_high_score(String name, uint16_t points, highscores &highscores_table) {
-  Serial.print("Register for " + name + ": ");
-  Serial.println(points);
-  unsigned int lowest_value_index = 0;
-  uint16_t lowest_value = -1;
-  bool found_lower = false;
-  for (unsigned int i; i < NUM_HI_SCORES; i++) {
+  highscore_entry* lowest_entry = nullptr;
+  for (unsigned int i = 0; i < NUM_HI_SCORES; i++) {
     uint16_t current_points = highscores_table.scores[i].points;
     if (current_points == 0) {
-      memcpy(highscores_table.scores[i].name, name.c_str(), NAME_LEN);
-      highscores_table.scores[i].points = points;
-      return;
+      lowest_entry = &highscores_table.scores[i];
+      break;
     }
-    Serial.print("i: ");
-    Serial.println(i);
-    Serial.print("Current points: ");
-    Serial.println(current_points);
-    Serial.print("Lowest: ");
-    Serial.println(lowest_value);
-    Serial.print("Points: ");
-    Serial.println(points);
-    if (current_points < points && current_points < lowest_value) {
-      Serial.println("We are in!");
-      found_lower = true;
-      lowest_value = current_points;
-      lowest_value_index = i;
+    if (current_points < points && (lowest_entry == NULL || lowest_entry->points < current_points)) {
+      lowest_entry = &highscores_table.scores[i];
     }
   }
-  if (found_lower) {
-    Serial.print("Writing lower for index: ");
-    Serial.println(lowest_value_index);
-    Serial.print("Lowest value: ");
-    Serial.println(lowest_value);
-    memcpy(highscores_table.scores[lowest_value_index].name, name.c_str(), NAME_LEN);
-    highscores_table.scores[lowest_value_index].points = points;
+  if (lowest_entry != nullptr) {
+    memcpy(lowest_entry->name, name.c_str(), NAME_LEN);
+    lowest_entry->points = points;
   }
 }
 
 bool is_high_score_eligable(uint16_t points, highscores &highscores_table) {
-  for (unsigned int i; i < NUM_HI_SCORES; i++) {
+  for (unsigned int i = 0; i < NUM_HI_SCORES; i++) {
       if (points > highscores_table.scores[i].points) return true;
   }
   return false;
