@@ -165,7 +165,7 @@ void intro() {
   creoqode.setCursor(3, 5);
   creoqode.setTextColor(color_title);
   creoqode.fillRect(2, 4, 60, 16, 0);
-  if (random(0, 10) > 8) {
+  if (random(0, 10) > 5) {
     creoqode.print("Wonsz");
     delay(2000);
     creoqode.setTextSize(1);
