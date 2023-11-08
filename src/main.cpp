@@ -1,5 +1,7 @@
 #include <Adafruit_GFX.h>   // Graphics Library
 #include <RGBmatrixPanel.h> // Hardware Library
+#include <EEPROM.h>
+
 #include "Font3x5FixedNum.h"
 #include "Font2x5FixedMonoNum.h"
 #include "Font5x5Fixed.h"
@@ -44,6 +46,11 @@
 #define NUM_HI_SCORES 10
 #define NAME_LEN 6
 
+const uint8_t eeprom_magic[] = { 0x58, 0xCE };
+const char eeprom_version = 0x01;
+
+#define HIGH_SCORES_ADDRESS 3
+
 RGBmatrixPanel creoqode(A, B, C, D, CLK, LAT, OE, false, 64);
  
 const int button_left = 34;
@@ -73,7 +80,7 @@ unsigned int food;
 unsigned long curtime;
 unsigned long game_speed = INITIAL_GAME_SPEED;
 
-unsigned long points = 0;
+uint16_t points = 0;
 unsigned int points_factor = 1;
 unsigned int catches = 0;
 
@@ -110,10 +117,21 @@ void game_over();
 bool detect_colision(unsigned int snake[]);
 void play_game();
  
-void setup() { 
+void setup() {
+  int a1 = analogRead(5) * analogRead(5);
   creoqode.begin();
-  
-  //intro();
+  randomSeed(analogRead(5)*millis() + a1);
+
+  if (EEPROM.read(0) != eeprom_magic[0] || EEPROM.read(1) != eeprom_magic[1]) {
+    EEPROM.write(0, eeprom_magic[0]);
+    EEPROM.write(1, eeprom_magic[1]);
+    EEPROM.write(2, eeprom_version);
+    EEPROM.put(HIGH_SCORES_ADDRESS, scores);
+  } else {
+    EEPROM.get(HIGH_SCORES_ADDRESS,scores);
+  }
+
+  intro();
 
   creoqode.drawRect(0, 0, 64, 32, color_border);
   delay(1200);
@@ -123,18 +141,19 @@ void setup() {
   pinMode(button_down, INPUT_PULLUP);
   pinMode(button_turbo, INPUT_PULLUP);
   pinMode(button_pause, INPUT_PULLUP);
-  Serial.begin(9600);
+  // Serial.begin(9600);
 }
  
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 void loop() {
-  //play_game();
-  //String name = enter_name();
-  //Serial.println(name);
-  register_high_score("WWWMMM", 43438, scores);
-  register_high_score("JULIAN", 100, scores);
-  register_high_score("ANIA", 125, scores);
+  play_game();
+  if (is_high_score_eligable(points, scores)) {
+     String name = enter_name();
+     register_high_score(name, points, scores);
+     EEPROM.put(HIGH_SCORES_ADDRESS, scores);
+  }
+  
   show_high_scores(scores);
   delay(125);
 }
@@ -146,17 +165,22 @@ void intro() {
   creoqode.setCursor(3, 5);
   creoqode.setTextColor(color_title);
   creoqode.fillRect(2, 4, 60, 16, 0);
-  creoqode.print("Wonsz");
-  delay(2000);
-  creoqode.setTextSize(1);
-  creoqode.fillRect(2, 20, 62, 12, 0);
-  creoqode.setCursor(3, 21);
-  creoqode.print("tududu");
-  delay(750);
-  creoqode.fillRect(2, 20, 62, 12, 0);
-  creoqode.setCursor(25, 24);
-  creoqode.print("tududu");
-  delay(2000);
+  if (random(0, 10) > 8) {
+    creoqode.print("Wonsz");
+    delay(2000);
+    creoqode.setTextSize(1);
+    creoqode.fillRect(2, 20, 62, 12, 0);
+    creoqode.setCursor(3, 21);
+    creoqode.print("tududu");
+    delay(750);
+    creoqode.fillRect(2, 20, 62, 12, 0);
+    creoqode.setCursor(25, 24);
+    creoqode.print("tududu");
+    delay(2000);
+  } else {
+    creoqode.print("Snake");
+    delay(2000);
+  }
   
   creoqode.drawRect(0, 0, 64, 32, color_border);
   delay(1200);
@@ -282,6 +306,7 @@ void game_over(){
   creoqode.setTextSize(2);
   creoqode.setCursor(8, 1);
   creoqode.setTextColor(color_gameover);
+  creoqode.setTextWrap(true);
   creoqode.print("GAME OVER");
 }
 
@@ -361,7 +386,7 @@ String enter_name() {
   const int buff_width = 1;
   const int char_height = 6;
   const int before_lines = 6;
-  const int after_lines = 6;
+  const int after_lines = 7;
   const int max_letters = NAME_LEN;
   int letter_indexes[max_letters];
   int current_letter = 0;
@@ -399,6 +424,7 @@ String enter_name() {
   name[0] = letters[selected_index];
   letter_indexes[0] = selected_index;
   if (KEY_PRESSED(button_turbo)) allow_commit = false;
+  creoqode.drawRect(x-1, y-1, max_letters*buff_width*8+2, before_lines+char_height+after_lines+2, creoqode.Color444(2, 2, 0));
   creoqode.fillRect(x,y,max_letters*buff_width*8, before_lines+char_height+after_lines, bg_color);
   while(true) {
     while (true) {
@@ -503,6 +529,12 @@ String enter_name() {
   return "ERROR";  
 }
 
+int compare_points(const void * a, const void *b) {
+  uint16_t pa = ((highscore_entry *) a)->points;
+  uint16_t pb = ((highscore_entry *) b)->points;
+  return pa > pb ? -1 : (pa < pb ? 1 : 0);
+}
+
 void show_high_scores(highscores &scores_table) {
   const unsigned int score_line_height = 7;
 
@@ -522,40 +554,97 @@ void show_high_scores(highscores &scores_table) {
     creoqode.setTextSize(1);
     creoqode.setCursor(5, 8);
     creoqode.println("No High Scores\n\nPlay some games");
-  } else {
-    unsigned int offset = 0;
-    unsigned int page_index = 0;
-    for (unsigned int i = offset; i < found_scores; i++) {
-      unsigned int base_line = page_index*score_line_height;
-      char name_buff[NAME_LEN+1];
-      memset(name_buff, '\0', sizeof(name_buff));
-      memcpy(name_buff, entries[i].name, NAME_LEN);
-      creoqode.setTextSize(1);
-      creoqode.setTextWrap(false);
-      // place
-      creoqode.setFont(&Font2x5FixedMonoNum);
-      creoqode.setTextColor(creoqode.Color444(2, 2, 0));
-      creoqode.setCursor(0,6+base_line);
-      creoqode.print(i+1);
-
-      // name
-      creoqode.setFont(&Font5x5Fixed);
-      creoqode.setTextColor(creoqode.Color444(0, 2, 0));
-      creoqode.setCursor(7,5+base_line);
-      creoqode.print((const char*) name_buff);
-
-      // points
-      creoqode.setFont(&Font3x5FixedNum);
-      creoqode.setCursor(45,6+base_line);
-      creoqode.setTextColor(creoqode.Color444(2, 0, 2));
-      creoqode.print(entries[i].points); 
-      page_index += 1;
+    while ((true)) {
+      if (KEY_PRESSED(button_turbo) || KEY_PRESSED(button_pause)) {
+          break;
+      }
     }
-    creoqode.setFont();
+    
+  } else {
+    qsort(entries, NUM_HI_SCORES, sizeof(entries[0]), compare_points);
+    unsigned int offset = 0;
+    bool do_score_loop = true;
+    unsigned long latch_durarion = 750;
+    unsigned long up_latch = 0;
+    unsigned long down_latch = 0;
+    uint16_t pos_color = creoqode.Color444(2, 2, 0);
+    uint16_t name_color = creoqode.Color444(0, 2, 0);
+    uint16_t points_color = creoqode.Color444(2, 0, 2);
+    while (do_score_loop) {
+      unsigned int page_index = 0;
+      creoqode.fillRect(0, 0, 64, 32, 0);
+      for (unsigned int i = offset; i < found_scores; i++) {
+        unsigned int base_line = page_index*score_line_height;
+        char name_buff[NAME_LEN+1];
+        memset(name_buff, '\0', sizeof(name_buff));
+        memcpy(name_buff, entries[i].name, NAME_LEN);
+        creoqode.setTextSize(1);
+        creoqode.setTextWrap(false);
+        // place
+        unsigned int place = i+1;
+        creoqode.setFont(&Font2x5FixedMonoNum);
+        creoqode.setTextColor(pos_color);
+        creoqode.setCursor(place < 10 ? 3 : 0, 6+base_line);
+        creoqode.print(i+1);
+
+        // name
+        creoqode.setFont(&Font5x5Fixed);
+        creoqode.setTextColor(name_color);
+        creoqode.setCursor(7,5+base_line);
+        creoqode.print((const char*) name_buff);
+
+        // points
+        unsigned int row_points = entries[i].points;
+        unsigned int points_margin = 0;
+        if (row_points < 10) {
+          points_margin = 4*4;
+        } else if (row_points < 100) {
+          points_margin = 3*4;
+        } else if (row_points < 1000) {
+          points_margin = 2*4;
+        } else if (row_points < 10000) {
+          points_margin = 4;
+        }
+        creoqode.setFont(&Font3x5FixedNum);
+        creoqode.setCursor(45 + points_margin,6+base_line);
+        creoqode.setTextColor(points_color);
+        creoqode.print(row_points); 
+        page_index += 1;
+        if (page_index > 4) {
+          break;
+        }
+      }
+      while (true) {
+        if (down_latch > 0 && KEY_NOT_PRESSED(button_down)) {
+          down_latch = 0;
+          delay(20);
+        }
+        if (up_latch > 0 && KEY_NOT_PRESSED(button_up)) {
+          up_latch = 0;
+          delay(20);
+        }
+        if ((found_scores > 4 && offset < found_scores - 4) && KEY_PRESSED(button_down)) {
+          if (down_latch == 0 || (millis() - down_latch) > latch_durarion) {
+            down_latch = millis();  
+            offset += 1;
+            break;
+          }
+        }
+        if ((offset > 0) && KEY_PRESSED(button_up)) {
+          if (up_latch == 0 || (millis() - up_latch) > latch_durarion) {
+            up_latch = millis();
+            offset -= 1;
+            break;
+          }
+        }
+        if (KEY_PRESSED(button_turbo) || KEY_PRESSED(button_pause)) {
+          do_score_loop = false;
+          break;
+        }
+      }
+    }
   }
-  delay(2200);
   creoqode.setFont();
-  return;
 }
 
 void register_high_score(String name, uint16_t points, highscores &highscores_table) {
@@ -576,9 +665,12 @@ void register_high_score(String name, uint16_t points, highscores &highscores_ta
   }
 }
 
-bool is_high_score_eligable(uint16_t points, highscores &highscores_table) {
+bool is_high_score_eligable(uint16_t current_points, highscores &highscores_table) {
+  if (current_points == 0) {
+    return false;
+  }
   for (unsigned int i = 0; i < NUM_HI_SCORES; i++) {
-      if (points > highscores_table.scores[i].points) return true;
+      if (current_points > highscores_table.scores[i].points) return true;
   }
   return false;
 }
