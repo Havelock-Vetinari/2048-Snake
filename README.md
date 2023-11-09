@@ -7,4 +7,7 @@ Reqiures standard 2048 game console libraries:
  * https://github.com/adafruit/Adafruit-GFX-Library.git
  
 ## Thanks
-This project uses [Paskowy font](http://www.dafont.com/paskowy.font) by [Bartek Nowak](http://nowak.tv)
+This project uses:
+ * [Paskowy font](http://www.dafont.com/paskowy.font) by [Bartek Nowak](http://nowak.tv)
+ * [GFX Fonts](https://github.com/robjen/GFX_fonts/tree/master) by https://github.com/robjen
+ 
