@@ -655,7 +655,7 @@ void register_high_score(String name, uint16_t points, highscores &highscores_ta
       lowest_entry = &highscores_table.scores[i];
       break;
     }
-    if (current_points < points && (lowest_entry == NULL || lowest_entry->points < current_points)) {
+    if (current_points < points && (lowest_entry == NULL || lowest_entry->points >= current_points)) {
       lowest_entry = &highscores_table.scores[i];
     }
   }
